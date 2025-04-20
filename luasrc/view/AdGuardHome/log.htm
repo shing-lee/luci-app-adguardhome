@@ -8,7 +8,7 @@
 <input type="button" class="cbi-button cbi-button-apply" value="<%:download log%>" style=" display:inline;" onclick=" return download_log()" />
 <script type="text/javascript">//<![CDATA[
 var islogreverse = true;
-var isutc2local = <%=tostring(self.timereplace)%>;
+var isutc2local = false;
 function createAndDownloadFile(fileName, content) {
     var aTag = document.createElement('a');
     var blob = new Blob([content]);
