@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -11,27 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-      date_version: ${{ steps.date_version.outputs.version }}
     steps:
       - name: Clone Repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
-
-      - name: Generate New Version with Date
-        id: date_version
-        run: |
-          # Base version
-          BASE_VERSION="1.8"
-          # Get current date in YYYYMMDD format
-          DATE_SUFFIX=$(date '+%Y%m%d')
-          # Combine to form the version number
-          NEW_VERSION="${BASE_VERSION}.${DATE_SUFFIX}"
-          echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
-          echo "New Version: ${NEW_VERSION}"
-
-          # Update version in Makefile
-          sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${NEW_VERSION}/" ./Makefile
 
       - name: Current Version in Makefile
         id: version
@@ -47,11 +33,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
-
-      - name: Update Makefile Version
-        run: |
-          sed -i "s/PKG_VERSION:=.*/PKG_VERSION:=${{ needs.Get-Version.outputs.date_version }}/" ./Makefile
-          cat ./Makefile
 
       - name: Apt Update
         env:
@@ -69,11 +50,11 @@ jobs:
 
       - name: Install OpenWrt SNAPSHOT SDK
         run: |
-          curl -SLk --connect-timeout 30 --retry 2 "https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-sdk-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst" -o "/tmp/SNAPSDK.tar.zst"
+          curl -SLk --connect-timeout 30 --retry 2 "https://downloads.openwrt.org/snapshots/targets/x86/64/openwrt-sdk-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst" -o "/tmp/SNAPSDK.tar.zst"
           cd /tmp
           zstd -d SNAPSDK.tar.zst
           tar xf SNAPSDK.tar
-          mv "openwrt-sdk-x86-64_gcc-13.3.0_musl.Linux-x86_64" "SNAPSDK"
+          mv "openwrt-sdk-x86-64_gcc-14.3.0_musl.Linux-x86_64" "SNAPSDK"
 
       - name: Copy AdGuardHome Source Codes
         run: |
@@ -118,7 +99,7 @@ jobs:
       - name: Create Version Info
         run: |
           mkdir -p ./artifacts
-          echo "v${{ needs.Get-Version.outputs.date_version }}" > ./artifacts/version.txt
+          echo "v${{ needs.Get-Version.outputs.version }}" > ./artifacts/version.txt
 
       - name: Move Packages to Upload Directory
         run: |
@@ -132,7 +113,16 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: AdGuardHome-Packages-v${{ needs.Get-Version.outputs.date_version }}
+          name: AdGuardHome-Packages-v${{ needs.Get-Version.outputs.version }}
           path: |
             ./artifacts/*
           retention-days: 30
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ./artifacts/*
+          name: Release v${{ needs.Get-Version.outputs.version }}
+          tag_name: ${{ github.ref_name }}

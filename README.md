@@ -4,7 +4,7 @@ Advanced OpenWrt LuCI app for AdGuard Home
 
 [中文README](README.CN.md)
 
-Download `.ipk` from Artifacts of [this GitHub Actions workflow](https://github.com/stevenjoezhang/luci-app-adguardhome/actions/runs/14384991701)
+Download `.ipk` from [Releases](https://github.com/stevenjoezhang/luci-app-adguardhome/releases)
 
 ## Features
 
